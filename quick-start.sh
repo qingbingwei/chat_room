@@ -1,23 +1,145 @@
 #!/bin/bash
 
-# 快速部署脚本 - 一键启动前后端
+# 快速部署脚本 - 一键安装依赖并启动前后端
+
+set -e
 
 echo "========================================="
-echo "聊天系统快速部署"
+echo "    聊天系统一键部署脚本 (Linux/macOS)"
 echo "========================================="
 echo ""
 
-# 检查依赖
+# 检测操作系统
+detect_os() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ -f /etc/debian_version ]]; then
+        echo "debian"
+    elif [[ -f /etc/redhat-release ]]; then
+        echo "redhat"
+    elif [[ -f /etc/arch-release ]]; then
+        echo "arch"
+    else
+        echo "unknown"
+    fi
+}
+
+OS=$(detect_os)
+echo "检测到操作系统: $OS"
+echo ""
+
+# 安装 Go
+install_go() {
+    echo "   尝试自动安装 Go..."
+    case $OS in
+        macos)
+            if command -v brew &> /dev/null; then
+                echo "   使用 Homebrew 安装 Go..."
+                brew install go
+            else
+                echo "   ❌ 请先安装 Homebrew: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+                exit 1
+            fi
+            ;;
+        debian)
+            echo "   使用 apt 安装 Go..."
+            sudo apt update
+            sudo apt install -y golang-go
+            ;;
+        redhat)
+            echo "   使用 yum/dnf 安装 Go..."
+            if command -v dnf &> /dev/null; then
+                sudo dnf install -y golang
+            else
+                sudo yum install -y golang
+            fi
+            ;;
+        arch)
+            echo "   使用 pacman 安装 Go..."
+            sudo pacman -Sy --noconfirm go
+            ;;
+        *)
+            echo "   ❌ 无法自动安装 Go，请手动安装"
+            echo "   下载地址: https://go.dev/dl/"
+            exit 1
+            ;;
+    esac
+}
+
+# 安装 Node.js
+install_node() {
+    echo "   尝试自动安装 Node.js..."
+    case $OS in
+        macos)
+            if command -v brew &> /dev/null; then
+                echo "   使用 Homebrew 安装 Node.js..."
+                brew install node
+            else
+                echo "   ❌ 请先安装 Homebrew"
+                exit 1
+            fi
+            ;;
+        debian)
+            echo "   使用 NodeSource 安装 Node.js LTS..."
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+            sudo apt install -y nodejs
+            ;;
+        redhat)
+            echo "   使用 NodeSource 安装 Node.js LTS..."
+            curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -
+            if command -v dnf &> /dev/null; then
+                sudo dnf install -y nodejs
+            else
+                sudo yum install -y nodejs
+            fi
+            ;;
+        arch)
+            echo "   使用 pacman 安装 Node.js..."
+            sudo pacman -Sy --noconfirm nodejs npm
+            ;;
+        *)
+            echo "   ❌ 无法自动安装 Node.js，请手动安装"
+            echo "   下载地址: https://nodejs.org/"
+            exit 1
+            ;;
+    esac
+}
+
+# 检查并安装依赖
 echo "1. 检查依赖..."
 
 if ! command -v go &> /dev/null; then
-    echo "❌ 错误: Go 未安装，请先安装 Go 1.21+"
-    exit 1
+    echo "   ⚠️  Go 未安装"
+    read -p "   是否自动安装 Go? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        install_go
+        # 重新加载环境变量
+        export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
+        if ! command -v go &> /dev/null; then
+            echo "   ❌ Go 安装后未找到，请重新打开终端后再试"
+            exit 1
+        fi
+    else
+        echo "   ❌ 请先安装 Go 1.21+"
+        exit 1
+    fi
 fi
 
 if ! command -v node &> /dev/null; then
-    echo "❌ 错误: Node.js 未安装，请先安装 Node.js 16+"
-    exit 1
+    echo "   ⚠️  Node.js 未安装"
+    read -p "   是否自动安装 Node.js? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        install_node
+        if ! command -v node &> /dev/null; then
+            echo "   ❌ Node.js 安装后未找到，请重新打开终端后再试"
+            exit 1
+        fi
+    else
+        echo "   ❌ 请先安装 Node.js 18+"
+        exit 1
+    fi
 fi
 
 echo "✅ Go 版本: $(go version)"

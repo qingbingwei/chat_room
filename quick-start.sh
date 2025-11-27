@@ -68,25 +68,26 @@ install_go() {
 
 # 安装 Node.js
 install_node() {
-    echo "   尝试自动安装 Node.js..."
+    echo "   尝试自动安装 Node.js 22.x..."
     case $OS in
         macos)
             if command -v brew &> /dev/null; then
                 echo "   使用 Homebrew 安装 Node.js..."
-                brew install node
+                brew install node@22
+                brew link node@22 --force --overwrite
             else
                 echo "   ❌ 请先安装 Homebrew"
                 exit 1
             fi
             ;;
         debian)
-            echo "   使用 NodeSource 安装 Node.js LTS..."
-            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+            echo "   使用 NodeSource 安装 Node.js 22.x..."
+            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
             sudo apt install -y nodejs
             ;;
         redhat)
-            echo "   使用 NodeSource 安装 Node.js LTS..."
-            curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -
+            echo "   使用 NodeSource 安装 Node.js 22.x..."
+            curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
             if command -v dnf &> /dev/null; then
                 sudo dnf install -y nodejs
             else
@@ -137,8 +138,30 @@ if ! command -v node &> /dev/null; then
             exit 1
         fi
     else
-        echo "   ❌ 请先安装 Node.js 18+"
+        echo "   ❌ 请先安装 Node.js 20+"
         exit 1
+    fi
+else
+    # 检查 Node.js 版本是否满足要求 (需要 20+)
+    NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
+    if [ "$NODE_VERSION" -lt 20 ]; then
+        echo "   ⚠️  Node.js 版本过低 ($(node -v))，Vite 需要 20.19+ 或 22.12+"
+        read -p "   是否升级 Node.js 到 22.x? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            install_node
+            # 验证新版本
+            hash -r  # 刷新命令缓存
+            NEW_VERSION=$(node -v 2>/dev/null | sed 's/v//' | cut -d. -f1)
+            if [ "$NEW_VERSION" -lt 20 ]; then
+                echo "   ❌ 升级后版本仍不满足要求，请手动安装 Node.js 22.x"
+                echo "   运行: curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs"
+                exit 1
+            fi
+        else
+            echo "   ❌ 请升级 Node.js 到 20+ 版本"
+            exit 1
+        fi
     fi
 fi
 

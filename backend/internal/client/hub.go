@@ -29,10 +29,10 @@ func NewClient(conn *websocket.Conn) *Client {
 		Send:          make(chan []byte, 256),
 		LastHeartbeat: time.Now().Unix(),
 	}
-	
+
 	// 启动写入协程（异步）
 	go client.WritePump()
-	
+
 	return client
 }
 
@@ -125,7 +125,7 @@ func (c *Client) WritePump() {
 				log.Printf("[WritePump] Close 错误: %v", err)
 				return
 			}
-			
+
 			log.Printf("[WritePump] 用户 %s (%s) 消息写入完成", c.Nickname, c.ID)
 
 		case <-ticker.C:
@@ -337,7 +337,7 @@ func (h *Hub) handleForward(sender *Client, msg *protocol.Message) {
 	// 设置发送者
 	msg.From = sender.ID
 
-	log.Printf("[handleForward] 转发消息: 类型=%s, 子类型=%s, 发送者=%s, 接收者数=%d", 
+	log.Printf("[handleForward] 转发消息: 类型=%s, 子类型=%s, 发送者=%s, 接收者数=%d",
 		msg.Type, msg.SubType, sender.Nickname, len(msg.To))
 
 	// 转发消息给目标用户
@@ -357,7 +357,7 @@ func (h *Hub) handleForward(sender *Client, msg *protocol.Message) {
 			log.Printf("[handleForward] 跳过发送者自己: %s (%s)", sender.Nickname, targetID)
 			continue
 		}
-		
+
 		if targetClient, ok := h.Clients[targetID]; ok {
 			log.Printf("[handleForward] 转发到: %s (%s)", targetClient.Nickname, targetID)
 			targetClient.SendMessage(msg)
@@ -396,10 +396,10 @@ func (h *Hub) BroadcastUserList() {
 	}
 
 	data, _ := json.Marshal(msg)
-	
+
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	for _, client := range h.Clients {
 		if client.ID != "" {
 			log.Printf("[BroadcastUserList] 发送用户列表到: %s (%s)", client.Nickname, client.ID)
@@ -416,7 +416,7 @@ func (h *Hub) BroadcastUserList() {
 // BroadcastUserOnline 广播用户上线通知
 func (h *Hub) BroadcastUserOnline(client *Client) {
 	log.Printf("[BroadcastUserOnline] 广播用户上线: %s (%s)", client.Nickname, client.ID)
-	
+
 	msg := protocol.NewMessage(protocol.TypeSystem, protocol.SubTypeUserOnline)
 	msg.Payload = map[string]interface{}{
 		"user_id":  client.ID,
@@ -444,7 +444,7 @@ func (h *Hub) BroadcastUserOnline(client *Client) {
 		}
 	}
 	log.Printf("[BroadcastUserOnline] 上线通知已发送给 %d/%d 个用户", successCount, broadcastCount)
-	
+
 	// 延迟再次广播用户列表，确保所有客户端同步
 	if successCount > 0 {
 		go func() {

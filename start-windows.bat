@@ -11,8 +11,35 @@ echo.
 echo [1/5] 检查 Go 环境...
 where go >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [错误] 未找到 Go，请先安装 Go 1.21+
+    echo       未找到 Go，尝试自动安装...
+    
+    :: 尝试使用 winget 安装
+    where winget >nul 2>nul
+    if %errorlevel% equ 0 (
+        echo       使用 winget 安装 Go...
+        winget install -e --id GoLang.Go --silent --accept-package-agreements --accept-source-agreements
+        if %errorlevel% equ 0 (
+            echo       Go 安装成功，请重新打开命令行窗口后再次运行此脚本
+            pause
+            exit /b 0
+        )
+    )
+    
+    :: 尝试使用 chocolatey 安装
+    where choco >nul 2>nul
+    if %errorlevel% equ 0 (
+        echo       使用 Chocolatey 安装 Go...
+        choco install golang -y
+        if %errorlevel% equ 0 (
+            echo       Go 安装成功，请重新打开命令行窗口后再次运行此脚本
+            pause
+            exit /b 0
+        )
+    )
+    
+    echo [错误] 无法自动安装 Go，请手动安装
     echo 下载地址: https://go.dev/dl/
+    echo 或者先安装 winget/chocolatey 包管理器
     pause
     exit /b 1
 )
@@ -23,8 +50,35 @@ echo       Go 版本: %GO_VERSION%
 echo [2/5] 检查 Node.js 环境...
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [错误] 未找到 Node.js，请先安装 Node.js 18+
+    echo       未找到 Node.js，尝试自动安装...
+    
+    :: 尝试使用 winget 安装
+    where winget >nul 2>nul
+    if %errorlevel% equ 0 (
+        echo       使用 winget 安装 Node.js...
+        winget install -e --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
+        if %errorlevel% equ 0 (
+            echo       Node.js 安装成功，请重新打开命令行窗口后再次运行此脚本
+            pause
+            exit /b 0
+        )
+    )
+    
+    :: 尝试使用 chocolatey 安装
+    where choco >nul 2>nul
+    if %errorlevel% equ 0 (
+        echo       使用 Chocolatey 安装 Node.js...
+        choco install nodejs-lts -y
+        if %errorlevel% equ 0 (
+            echo       Node.js 安装成功，请重新打开命令行窗口后再次运行此脚本
+            pause
+            exit /b 0
+        )
+    )
+    
+    echo [错误] 无法自动安装 Node.js，请手动安装
     echo 下载地址: https://nodejs.org/
+    echo 或者先安装 winget/chocolatey 包管理器
     pause
     exit /b 1
 )

@@ -146,18 +146,25 @@ echo "✅ Go 版本: $(go version)"
 echo "✅ Node.js 版本: $(node --version)"
 echo ""
 
+# 获取脚本所在目录
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
 # 后端设置
 echo "2. 设置后端..."
 cd backend
 
-if [ ! -d "vendor" ]; then
-    echo "   安装 Go 依赖..."
-    go mod tidy
-fi
+echo "   安装 Go 依赖..."
+go mod tidy
+go mod download
+
+echo "   编译后端（当前系统架构）..."
+rm -f chat-server  # 删除旧的二进制文件，避免跨平台问题
+go build -o chat-server main.go
 
 if [ ! -f "chat-server" ]; then
-    echo "   编译后端..."
-    go build -o chat-server main.go
+    echo "   ❌ 后端编译失败"
+    exit 1
 fi
 
 cd ..
@@ -168,9 +175,18 @@ echo ""
 echo "3. 设置前端..."
 cd frontend
 
-if [ ! -d "node_modules" ]; then
-    echo "   安装前端依赖..."
-    npm install
+echo "   安装前端依赖..."
+# 清理可能损坏的 node_modules
+if [ -d "node_modules" ] && [ ! -f "node_modules/.bin/vite" ]; then
+    echo "   检测到依赖不完整，重新安装..."
+    rm -rf node_modules package-lock.json
+fi
+
+npm install
+
+if [ ! -f "node_modules/.bin/vite" ]; then
+    echo "   ❌ 前端依赖安装失败"
+    exit 1
 fi
 
 cd ..
@@ -194,6 +210,9 @@ echo "WebSocket: ws://localhost:9090/ws"
 echo ""
 read -p "按 Enter 键继续启动..."
 
+# 回到脚本目录
+cd "$SCRIPT_DIR"
+
 # 启动后端（后台运行）
 cd backend
 ./chat-server &
@@ -204,9 +223,10 @@ echo "✅ 后端服务器已启动 (PID: $BACKEND_PID)"
 sleep 2
 
 # 启动前端（前台运行）
-cd ../frontend
+cd "$SCRIPT_DIR/frontend"
 echo "✅ 启动前端服务器..."
-npm run dev
+# 使用 npx 确保能找到 vite
+npx vite --host
 
 # 当前端退出时，清理后端
 echo ""

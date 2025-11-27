@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -v http://localhost:18888/)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

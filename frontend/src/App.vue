@@ -734,7 +734,7 @@ const createGroupWithName = (groupName) => {
     
     const group = {
       group_id: groupId,
-      group_name: value,
+      group_name: groupName,
       members: allMembers,
       creator: currentUser.user_id,
       created_at: Date.now()
